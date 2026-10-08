@@ -14,40 +14,29 @@ func listApp(host string, credential string, lengthProject int, authMode int, li
 	var applicationListforProject []string
 	var applicationList []AppList
 	for pageIndex := 1; pageIndex <= lengthProject; pageIndex++ {
-		// raw := httpRequest(host+projectScrapeApi+strconv.Itoa(pageIndex),
-		// 	credential)
-		raw := projectSearchApi(host, "APP", 500, pageIndex, credential, authMode)
+		raw := projectSearchApi(host, "APP", pageSize, pageIndex, credential, authMode)
 
 		var structured ProjectSearchPage
-
-		err := dataParse(raw, &structured)
-		// fmt.Println(structured)
-		if err != nil {
+		if err := dataParse(raw, &structured); err != nil {
 			fmt.Println(err)
 		}
-		switch listMode {
-		case 0:
-			for projectIndex := range structured.Components {
-				applicationListforProject = append(applicationListforProject, structured.Components[projectIndex].Key)
-			}
-			return applicationListforProject
 
-		case 1:
-			for projectIndex := range structured.Components {
-				applicationList = append(applicationList, AppList{
-					Key:  structured.Components[projectIndex].Key,
-					Name: structured.Components[projectIndex].Name,
-				})
+		for _, component := range structured.Components {
+			if listMode == 0 {
+				applicationListforProject = append(applicationListforProject, component.Key)
+			} else {
+				applicationList = append(applicationList, AppList{Key: component.Key, Name: component.Name})
 			}
-			loadingCh <- true
-
-			displayJob("list app", "end")
-			return applicationList
 		}
-
 	}
 
-	return nil
+	if listMode == 0 {
+		return applicationListforProject
+	}
+
+	loadingCh <- true
+	displayJob("list app", "end")
+	return applicationList
 }
 
 func languageofApp(appList []AppList, host string, credential string, authMode int) []AppList {
@@ -64,7 +53,7 @@ func languageofApp(appList []AppList, host string, credential string, authMode i
 
 		for indexProject := range listedProjectOnApp {
 			// raw := httpRequest(host+projectBranchesApi+projectList[index].Key, credential)
-			raw := navigationComponentApi(host, listedProjectOnApp[indexProject], appList[indexApp].MainBranch, credential, authMode)
+			raw := navigationComponentApi(host, listedProjectOnApp[indexProject], "", credential, authMode)
 			var structured NavigationComponent
 			err := dataParse(raw, &structured)
 			handleErr(err)
@@ -76,11 +65,7 @@ func languageofApp(appList []AppList, host string, credential string, authMode i
 			// time.Sleep(10 * time.Second)
 			qualityProfilesNames := make([]string, len(qualityProfilesKeys)) //
 			for indexKey, qualityProfileKey := range qualityProfilesKeys {
-				raw := qualityProfilesShowApi(host, qualityProfileKey, credential, authMode)
-				var structured QualityProfilesShow
-				err := dataParse(raw, &structured)
-				handleErr(err)
-				qualityProfilesNames[indexKey] = structured.Profile.LanguageName
+				qualityProfilesNames[indexKey] = languageOfProfile(host, qualityProfileKey, credential, authMode)
 			}
 			languageofProjectonApp = append(languageofProjectonApp, qualityProfilesNames...)
 

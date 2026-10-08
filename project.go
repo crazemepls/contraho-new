@@ -17,6 +17,21 @@ var (
 	loadingCh = make(chan bool)
 )
 
+// Cache of quality profile key -> language name. A server has few profiles,
+// but the old code fetched them once per project.
+var profileLanguageCache = map[string]string{}
+
+func languageOfProfile(host string, profileKey string, credential string, authMode int) string {
+	if name, ok := profileLanguageCache[profileKey]; ok {
+		return name
+	}
+	raw := qualityProfilesShowApi(host, profileKey, credential, authMode)
+	var structured QualityProfilesShow
+	handleErr(dataParse(raw, &structured))
+	profileLanguageCache[profileKey] = structured.Profile.LanguageName
+	return structured.Profile.LanguageName
+}
+
 func indexPageNumberCounter(getProjectSearchPage interface{}) int {
 	switch page := getProjectSearchPage.(type) {
 	case ProjectSearchPage:
@@ -200,6 +215,10 @@ func branchDetailOfProjects(projectList interface{}, host string, credential str
 				compareLastDate = append(compareLastDate, lastDate)
 			}
 
+			if len(structured.Branches) == 0 {
+				continue // no branch info (e.g. 403/404): leave this project's fields empty
+			}
+
 			branchCalculatedNloc := findIndexOfHighestValue(compareNloc)
 			lastAnalysisDate, err := findIndexOfLatestDate(compareLastDate)
 			handleErr(err)
@@ -294,8 +313,10 @@ func ownerProject(projectList interface{}, host string, credential string, authM
 		if !ownerField.IsValid() || !emailField.IsValid() {
 			panic("Owner or Email field not found")
 		}
-		ownerField.SetString(structured.Users[0].Name)
-		emailField.SetString(structured.Users[0].Email)
+		if len(structured.Users) > 0 {
+			ownerField.SetString(structured.Users[0].Name)
+			emailField.SetString(structured.Users[0].Email)
+		}
 
 	}
 	loadingCh <- true
@@ -455,11 +476,7 @@ func languageofProject(projectList []ProjectSearchList, host string, credential 
 		if len(qualityProfilesKeys) != 0 {
 			qualityProfilesNames := make([]string, len(qualityProfilesKeys)) //
 			for indexKey, qualityProfileKey := range qualityProfilesKeys {
-				raw := qualityProfilesShowApi(host, qualityProfileKey, credential, authMode)
-				var structured QualityProfilesShow
-				err := dataParse(raw, &structured)
-				handleErr(err)
-				qualityProfilesNames[indexKey] = structured.Profile.LanguageName
+				qualityProfilesNames[indexKey] = languageOfProfile(host, qualityProfileKey, credential, authMode)
 			}
 			projectList[index].Language = strings.Join(qualityProfilesNames, ", ")
 		} else {
@@ -502,7 +519,7 @@ func metricProject(projectList interface{}, host string, credential string, auth
 		}
 
 		var structured ProjectMeasures
-		raw := measuresComponentApi(host, key, branch, strings.Join(metrics, ", "), credential, authMode)
+		raw := measuresComponentApi(host, key, branch, strings.Join(metrics, ","), credential, authMode)
 		err := dataParse(raw, &structured)
 		handleErr(err)
 

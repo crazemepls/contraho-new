@@ -34,6 +34,9 @@ func displayJob(job string, phase string) {
 }
 
 func clearScreen() {
+	if fi, err := os.Stdout.Stat(); err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+		return // stdout is piped/redirected: don't write terminal escape codes into it
+	}
 	var cmd *exec.Cmd
 
 	switch runtime.GOOS {

@@ -19,10 +19,10 @@ func arguments(subcommand int) (host *string,
 	fileOutput *string, pagingOutput *bool,
 	additionalOptions map[string]interface{}) {
 	flagSet := flag.NewFlagSet("project", flag.ExitOnError)
-	host = flagSet.String("host", "localhost", "Host of Sonarqube server. It is can be FQDN, or IP address")
+	host = flagSet.String("host", "http://localhost:9000", "URL of Sonarqube server, including http:// or https://")
 	username := flagSet.String("username", "", "Username will be used for authentication to Sonarqube server")
 	password := flagSet.String("password", "", "Password will be used for authentication to Sonarqube server")
-	token := flagSet.String("token", "", "Token will be used for authentication to Sonarqube server")
+	token := flagSet.String("token", os.Getenv("SONAR_TOKEN"), "Token will be used for authentication to Sonarqube server (default: $SONAR_TOKEN)")
 	fileOutput = flagSet.String("filename", "", "CSV filename will be used for CSV output file")
 	pagingOutput = flagSet.Bool("paging", false, "Pagination output using pager (only available on Linux and macOS)")
 	additionalOptions = make(map[string]interface{})
@@ -45,17 +45,7 @@ func arguments(subcommand int) (host *string,
 				"Error: --paging is not supported on Windows",
 				1)
 		}
-		if *username != "" && *password != "" && *token == "" {
-			authMode = 1
-		} else {
-			authMode = 0
-		}
-		switch authMode {
-		case 0:
-			credential = *token
-		case 1:
-			credential = authorizationHeader(*username, *password)
-		}
+		credential, authMode = resolveConnection(host, *username, *password, *token)
 		// fmt.Println(*username, *password, credential, authMode)
 
 		raw := navigationGlobalApi(*host, credential, authMode)
@@ -100,20 +90,13 @@ func arguments(subcommand int) (host *string,
 		// fmt.Println(*unlistedApp)
 	case 1:
 		flagSet.Parse(os.Args[2:])
+		if *fileOutput != "" && *pagingOutput {
+			exitWithErrorMessage("Error: --filename and --paging cannot be used simultaneously.", 1)
+		}
 		if *pagingOutput && runtime.GOOS == "windows" {
 			exitWithErrorMessage("Error: --paging is not supported on Windows", 1)
 		}
-		if *username != "" && *password != "" && *token == "" {
-			authMode = 1
-		} else {
-			authMode = 0
-		}
-		switch authMode {
-		case 0:
-			credential = *token
-		case 1:
-			credential = authorizationHeader(*username, *password)
-		}
+		credential, authMode = resolveConnection(host, *username, *password, *token)
 		// fmt.Println(*username, *password, credential, authMode)
 
 		raw := navigationGlobalApi(*host, credential, authMode)
@@ -170,6 +153,12 @@ func createCSVFile(fileOutput string, startTime time.Time, data interface{}) {
 	for i := 0; i < val.Len(); i++ {
 		row := getStructFieldValues(val.Index(i).Interface())
 		writer.Write(row)
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		fmt.Println("Error writing CSV file:", err)
+		os.Exit(1)
 	}
 
 	fmt.Println("CSV file generated successfully!")
@@ -238,7 +227,7 @@ func getStructFieldValues(v interface{}) []string {
 		if fieldValue.Kind() == reflect.Int {
 			values = append(values, strconv.Itoa(int(fieldValue.Int())))
 		} else {
-			values = append(values, fmt.Sprintf("%v", fieldValue.Interface()))
+			values = append(values, csvSafe(fmt.Sprintf("%v", fieldValue.Interface())))
 		}
 	}
 	return values
@@ -299,4 +288,31 @@ func keepProjectsByKeys(projects []ProjectSearchList, keysToKeep []string) []Pro
 	}
 
 	return updatedProjects
+}
+
+// resolveConnection validates --host and picks the auth mode.
+// Token wins if both token and username/password are given (same as before).
+func resolveConnection(host *string, username, password, token string) (credential string, authMode int) {
+	*host = strings.TrimRight(*host, "/")
+	if !strings.HasPrefix(*host, "http://") && !strings.HasPrefix(*host, "https://") {
+		exitWithErrorMessage("Error: --host must start with http:// or https://", 1)
+	}
+
+	switch {
+	case token != "":
+		return token, 0
+	case username != "" && password != "":
+		return authorizationHeader(username, password), 1
+	default:
+		exitWithErrorMessage("Error: provide --token (or $SONAR_TOKEN), or both --username and --password.", 1)
+		return "", 0
+	}
+}
+
+// csvSafe stops spreadsheet apps from executing cells such as "=HYPERLINK(...)".
+func csvSafe(s string) string {
+	if len(s) > 1 && strings.ContainsRune("=+-@\t\r", rune(s[0])) {
+		return "'" + s
+	}
+	return s
 }

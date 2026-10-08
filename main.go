@@ -58,44 +58,13 @@ func projectSearch() {
 }
 
 func project(host string, credential string, authMode int, lengthProjectPage int, filterMode int, appName string) []ProjectSearchList {
-	return metricProject(
-		ownerProject(
-			languageofProject(
-				qualityGateofProject(
-					branchDetailOfProjects(
-						projectFiltering(
-							listProject(
-								host,
-								credential,
-								lengthProjectPage,
-								authMode,
-							),
-							host,
-							credential,
-							filterMode,
-							authMode,
-							appName,
-						),
-						host,
-						credential,
-						authMode,
-					).([]ProjectSearchList),
-					host,
-					credential,
-					authMode,
-				),
-				host,
-				credential,
-				authMode,
-			),
-			host,
-			credential,
-			authMode,
-		).([]ProjectSearchList),
-		host,
-		credential,
-		authMode,
-	).([]ProjectSearchList)
+	list := listProject(host, credential, lengthProjectPage, authMode)
+	list = projectFiltering(list, host, credential, filterMode, authMode, appName)
+	list = branchDetailOfProjects(list, host, credential, authMode).([]ProjectSearchList)
+	list = qualityGateofProject(list, host, credential, authMode)
+	list = languageofProject(list, host, credential, authMode)
+	list = ownerProject(list, host, credential, authMode).([]ProjectSearchList)
+	return metricProject(list, host, credential, authMode).([]ProjectSearchList)
 }
 
 func appSearch() {

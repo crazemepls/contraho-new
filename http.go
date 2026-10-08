@@ -5,57 +5,59 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 )
 
+var httpClient = &http.Client{Timeout: 60 * time.Second}
+
 func httpRequest(url string, credential string, mode int) (data []byte, statusCode int) {
+	const maxAttempts = 3
 
-	// t := http.DefaultTransport.(*http.Transport).Clone()
-	// t.MaxIdleConns = 100
-	// t.MaxConnsPerHost = 100 // Corrected field name
-	// t.MaxIdleConnsPerHost = 100
-	// t.IdleConnTimeout = 45 * time.Second
-	// t.TLSHandshakeTimeout = 45 * time.Second
-	client := &http.Client{
-		// Timeout:   60 * time.Second,
-		// Transport: t,
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error creating HTTP request:", err)
+			os.Exit(1)
+		}
+
+		switch mode {
+		case 1:
+			req.Header.Add("Authorization", credential)
+		case 0:
+			req.SetBasicAuth(credential, "")
+		}
+
+		resp, err := httpClient.Do(req)
+		if err == nil {
+			data, err = io.ReadAll(resp.Body)
+			resp.Body.Close()
+			statusCode = resp.StatusCode
+		}
+
+		// Retry on network errors, 429 and 5xx; give up after maxAttempts.
+		if err != nil || statusCode == http.StatusTooManyRequests || statusCode >= 500 {
+			if attempt < maxAttempts {
+				time.Sleep(time.Duration(attempt) * time.Second)
+				continue
+			}
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "Error requesting", url, ":", err)
+				os.Exit(1)
+			}
+		}
+		break
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		return
+	switch statusCode {
+	case http.StatusUnauthorized:
+		fmt.Fprintln(os.Stderr, "Error: authentication failed (401). Check --token or --username/--password.")
+		os.Exit(1)
+	case http.StatusForbidden:
+		fmt.Fprintln(os.Stderr, "Warning: access denied (403) for", url)
 	}
 
-	switch mode {
-	case 1:
-		req.Header.Add("Authorization", credential)
-	case 0:
-		req.SetBasicAuth(credential, "")
-	}
-	// fmt.Println(url)
-	// req.Header.Add("ContentType", headerContentType)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
-		return
-	}
-	// defer resp.Body.Close()
-
-	data, err = io.ReadAll(resp.Body)
-	statusCode = resp.StatusCode
-
-	if err != nil {
-		fmt.Println("Error reading HTTP response body:", err)
-		return
-	}
-	// fmt.Println(string(data))
-
-	// data = string(body)
-	// fmt.Println(resp.StatusCode)
 	return data, statusCode
-
 }
 
 func projectSearchApi(host string, qualifiers string, size int, pageNumber int, credential string, mode int) (data []byte) {
@@ -185,7 +187,9 @@ func navigationComponentApi(host string, projectKey string, branch string, crede
 
 	queryParams := url.Values{}
 	queryParams.Set("component", projectKey)
-	queryParams.Set("branch", branch)
+	if branch != "" {
+		queryParams.Set("branch", branch)
+	}
 	encodedQuery := queryParams.Encode()
 	fullPath := host + navigationComponent + "?" + encodedQuery
 	data, _ = httpRequest(fullPath, credential, mode)
