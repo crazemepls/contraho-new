@@ -586,3 +586,23 @@ func gateResult(value string) string {
 		return value
 	}
 }
+
+// filterByKeyPrefix keeps only the projects whose key starts with one of the
+// comma-separated prefixes (case-sensitive, like SonarQube keys). An empty
+// prefixes string keeps everything.
+func filterByKeyPrefix(projectList []ProjectSearchList, prefixes string) []ProjectSearchList {
+	if prefixes == "" {
+		return projectList
+	}
+	var kept []ProjectSearchList
+	for _, project := range projectList {
+		for _, prefix := range strings.Split(prefixes, ",") {
+			prefix = strings.TrimSpace(prefix)
+			if prefix != "" && strings.HasPrefix(project.Key, prefix) {
+				kept = append(kept, project)
+				break
+			}
+		}
+	}
+	return kept
+}

@@ -46,3 +46,4 @@ go run . application --host="http://localhost:9000" --token="squ_3131sa..." --fi
 - `--unlisted-on-app`, list all projects that are not listed on any application. Can not be used with `--listed-on-app` option and onand on Sonarqube Community Edition.
 - `--listed-on-app`, list all projects that are listed on any application. Can not be used with `--unlisted-on-app` option and on Sonarqube Community Edition.
 - `--app [app1,app2]`, list all projects that are listed on any application defined in with this option. 
+- `--bureau [prefix1,prefix2]`, list only projects whose project key starts with the given prefix (case-sensitive), e.g. `--bureau="tsc:"` keeps `tsc:a` and `tsc:b`. Can be combined with `--app`, `--listed-on-app` and `--unlisted-on-app`.

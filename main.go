@@ -36,16 +36,22 @@ func projectSearch() {
 
 	lengthProjectPage := projectSearchApiLength(*host, credential, "TRK", authMode)
 
+	bureau, _ := otherOptions["bureau"].(string)
+
 	var projectList []ProjectSearchList
 	switch {
 	case otherOptions["unlistedApp"] == true:
-		projectList = project(*host, credential, authMode, lengthProjectPage, 0, emptyString)
+		projectList = project(*host, credential, authMode, lengthProjectPage, 0, emptyString, bureau)
 	case otherOptions["listedApp"] == true:
-		projectList = project(*host, credential, authMode, lengthProjectPage, 1, emptyString)
+		projectList = project(*host, credential, authMode, lengthProjectPage, 1, emptyString, bureau)
 	case otherOptions["app"] != "":
-		projectList = project(*host, credential, authMode, lengthProjectPage, 1, otherOptions["app"].(string))
+		projectList = project(*host, credential, authMode, lengthProjectPage, 1, otherOptions["app"].(string), bureau)
 	default:
-		projectList = project(*host, credential, authMode, lengthProjectPage, -1, emptyString)
+		projectList = project(*host, credential, authMode, lengthProjectPage, -1, emptyString, bureau)
+	}
+	if bureau != "" && len(projectList) == 0 {
+		fmt.Printf("No project key starts with %q (the match is case-sensitive).\n", bureau)
+		os.Exit(1)
 	}
 	if *fileOutput != "" {
 		createCSVFile(*fileOutput, startTime, projectList)
@@ -57,8 +63,13 @@ func projectSearch() {
 
 }
 
-func project(host string, credential string, authMode int, lengthProjectPage int, filterMode int, appName string) []ProjectSearchList {
+func project(host string, credential string, authMode int, lengthProjectPage int, filterMode int, appName string, bureau string) []ProjectSearchList {
 	list := listProject(host, credential, lengthProjectPage, authMode)
+	// Filter first, so the per-project API calls below only run for matching projects.
+	list = filterByKeyPrefix(list, bureau)
+	if len(list) == 0 {
+		return list
+	}
 	list = projectFiltering(list, host, credential, filterMode, authMode, appName)
 	list = branchDetailOfProjects(list, host, credential, authMode).([]ProjectSearchList)
 	list = qualityGateofProject(list, host, credential, authMode)
