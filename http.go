@@ -104,7 +104,6 @@ func measuresComponentApi(host string, projectKey string, branch string, metricK
 	data, _ = httpRequest(fullPath, credential, mode)
 
 	return data
-
 }
 
 func projectAnalysesSearchApi(host string, size int, pageNumber int, projectKey string, branch string, credential string, mode int) (data []byte) {
@@ -122,7 +121,6 @@ func projectAnalysesSearchApi(host string, size int, pageNumber int, projectKey 
 	data, _ = httpRequest(fullPath, credential, mode)
 
 	return data
-
 }
 
 func permissionUsersApi(host string, projectKey string, credential string, mode int) (data []byte) {

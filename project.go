@@ -113,7 +113,7 @@ func listProject(host string, credential string, lengthProject int, authMode int
 	var projectList []ProjectSearchList
 	for pageIndex := 1; pageIndex <= lengthProject; pageIndex++ {
 		// raw := httpRequest(host+projectScrapeApi+strconv.Itoa(pageIndex),
-		// 	credential)
+		//     credential)
 		raw := projectSearchApi(host, "TRK", 500, pageIndex, credential, authMode)
 
 		var structured ProjectSearchPage
@@ -126,8 +126,9 @@ func listProject(host string, credential string, lengthProject int, authMode int
 
 		for projectIndex := range structured.Components {
 			projectList = append(projectList, ProjectSearchList{
-				Key:  structured.Components[projectIndex].Key,
-				Name: structured.Components[projectIndex].Name,
+				Key:              structured.Components[projectIndex].Key,
+				Name:             structured.Components[projectIndex].Name,
+				LastAnalysisDate: structured.Components[projectIndex].LastAnalysisDate,
 			})
 		}
 	}
@@ -176,10 +177,10 @@ func branchDetailOfProjects(projectList interface{}, host string, credential str
 
 			handleErr(err)
 			var (
-				compareNloc     []int
-				loc             int
-				lastDate        string
-				compareLastDate []string
+				compareNloc []int
+				loc         int
+				// lastDate        string
+				// compareLastDate []string
 			)
 
 			for branchIndex := range structured.Branches {
@@ -199,20 +200,20 @@ func branchDetailOfProjects(projectList interface{}, host string, credential str
 				}
 				compareNloc = append(compareNloc, loc)
 
-				lastDateRaw := projectAnalysesSearchApi(host, 1, 1, projectList[index].Key,
-					structured.Branches[branchIndex].Name, credential, authMode)
+				// lastDateRaw := projectAnalysesSearchApi(host, 1, 1, projectList[index].Key,
+				// 	structured.Branches[branchIndex].Name, credential, authMode)
 
-				var lastDateStructured ProjectAnalyses
-				err = dataParse(lastDateRaw, &lastDateStructured)
-				handleErr(err)
+				// var lastDateStructured ProjectAnalyses
+				// err = dataParse(lastDateRaw, &lastDateStructured)
+				// handleErr(err)
 
-				if len(lastDateStructured.Analyses) == 0 {
-					lastDate = "0001-01-01T00:00:00+0000"
-				} else {
-					lastDate = lastDateStructured.Analyses[0].Date
-				}
+				// if len(lastDateStructured.Analyses) == 0 {
+				// 	lastDate = "0001-01-01T00:00:00+0000"
+				// } else {
+				// 	lastDate = lastDateStructured.Analyses[0].Date
+				// }
 
-				compareLastDate = append(compareLastDate, lastDate)
+				// compareLastDate = append(compareLastDate, lastDate)
 			}
 
 			if len(structured.Branches) == 0 {
@@ -220,13 +221,13 @@ func branchDetailOfProjects(projectList interface{}, host string, credential str
 			}
 
 			branchCalculatedNloc := findIndexOfHighestValue(compareNloc)
-			lastAnalysisDate, err := findIndexOfLatestDate(compareLastDate)
+			// lastAnalysisDate, err := findIndexOfLatestDate(compareLastDate)
 			handleErr(err)
 
 			projectList[index].Branch = structured.Branches[branchCalculatedNloc].Name
 			projectList[index].Loc = strconv.Itoa(compareNloc[branchCalculatedNloc])
-			projectList[index].LastAnalysisDate = compareLastDate[lastAnalysisDate]
-			projectList[index].LastAnalysisBranch = structured.Branches[lastAnalysisDate].Name
+			// projectList[index].LastAnalysisDate = compareLastDate[lastAnalysisDate]
+			// projectList[index].LastAnalysisBranch = structured.Branches[lastAnalysisDate].Name
 		}
 		loadingCh <- true
 		displayJob("obtain branch data", "end")
@@ -446,7 +447,7 @@ func qualityGateofProject(projectList []ProjectSearchList, host string, credenti
 
 		handleErr(err)
 
-		projectList[index].QualityGateId = structured.QualityGate.ID
+		// projectList[index].QualityGateId = structured.QualityGate.ID
 		projectList[index].QualityGateName = structured.QualityGate.Name
 
 	}

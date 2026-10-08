@@ -207,6 +207,9 @@ func getStructFieldNames(v interface{}) []string {
 	// Make sure the input is a struct
 	if value.Kind() == reflect.Struct {
 		for i := 0; i < value.NumField(); i++ {
+			if value.Type().Field(i).Tag.Get("csv") == "-" {
+				continue
+			}
 			fields = append(fields, value.Type().Field(i).Name)
 		}
 	}
@@ -221,6 +224,9 @@ func getStructFieldValues(v interface{}) []string {
 	// Make sure the input is a struct
 	// if value.Kind() == reflect.Struct {
 	for i := 0; i < value.NumField(); i++ {
+		if value.Type().Field(i).Tag.Get("csv") == "-" {
+			continue
+		}
 		// for i := range value.Nu {
 		fieldValue := value.Field(i)
 		// Handle numeric fields as strings to preserve leading zeros
