@@ -50,30 +50,36 @@ type ProjectSearchList struct {
 	// LastAnalysisBranch string
 	LastAnalysisDate string
 	// QualityGateId      string
-	QualityGateName  string
-	Language         string
-	Bugs             string
-	SecurityHotspots string
-	LineCoverage     string
-	DuplicatedLines  string
-	CodeSmells       string
-	DebtInMinute     string
+	QualityGateName       string
+	Language              string
+	Bugs                  string
+	SecurityHotspots      string
+	LineCoverage          string
+	DuplicatedLines       string
+	CodeSmells            string
+	DebtInMinute          string
+	ReliabilityRating     string
+	SecurityRating        string
+	MaintainabilityRating string
 }
 
 type AppList struct {
-	Key              string
-	Name             string
-	MainBranch       string
-	Owner            string
-	Email            string
-	Language         string
-	Loc              string
-	Bugs             string
-	SecurityHotspots string
-	LineCoverage     string
-	DuplicatedLines  string
-	CodeSmells       string
-	DebtInMinute     string
+	Key                   string
+	Name                  string
+	MainBranch            string
+	Owner                 string
+	Email                 string
+	Language              string
+	Loc                   string
+	Bugs                  string
+	SecurityHotspots      string
+	LineCoverage          string
+	DuplicatedLines       string
+	CodeSmells            string
+	DebtInMinute          string
+	ReliabilityRating     string
+	SecurityRating        string
+	MaintainabilityRating string
 }
 
 type ProjectBranchesList struct {

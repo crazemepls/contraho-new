@@ -497,7 +497,8 @@ func metricProject(projectList interface{}, host string, credential string, auth
 	metrics := []string{
 		"bugs", "security_hotspots",
 		"line_coverage", "duplicated_lines",
-		"code_smells", "sqale_index"}
+		"code_smells", "sqale_index",
+		"reliability_rating", "security_rating", "sqale_rating"}
 
 	sliceValue := reflect.ValueOf(projectList)
 	if sliceValue.Kind() != reflect.Slice {
@@ -538,10 +539,25 @@ func metricProject(projectList interface{}, host string, credential string, auth
 				element.FieldByName("CodeSmells").SetString(measure.Value)
 			case "sqale_index":
 				element.FieldByName("DebtInMinute").SetString(measure.Value)
+			case "reliability_rating":
+				element.FieldByName("ReliabilityRating").SetString(ratingLetter(measure.Value))
+			case "security_rating":
+				element.FieldByName("SecurityRating").SetString(ratingLetter(measure.Value))
+			case "sqale_rating":
+				element.FieldByName("MaintainabilityRating").SetString(ratingLetter(measure.Value))
 			}
 		}
 	}
 	loadingCh <- true
 	displayJob("obtain metric of projects", "end")
 	return projectList
+}
+
+// ratingLetter converts SonarQube's numeric rating (1 or "1.0" ... 5) to A-E.
+func ratingLetter(value string) string {
+	f, err := strconv.ParseFloat(value, 64)
+	if err != nil || f < 1 || f > 5 {
+		return value
+	}
+	return string(rune('A' + int(f) - 1))
 }
