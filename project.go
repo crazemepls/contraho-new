@@ -221,13 +221,26 @@ func branchDetailOfProjects(projectList interface{}, host string, credential str
 			}
 
 			branchCalculatedNloc := findIndexOfHighestValue(compareNloc)
-			// lastAnalysisDate, err := findIndexOfLatestDate(compareLastDate)
-			handleErr(err)
 
 			projectList[index].Branch = structured.Branches[branchCalculatedNloc].Name
 			projectList[index].Loc = strconv.Itoa(compareNloc[branchCalculatedNloc])
-			// projectList[index].LastAnalysisDate = compareLastDate[lastAnalysisDate]
-			// projectList[index].LastAnalysisBranch = structured.Branches[lastAnalysisDate].Name
+
+			// Branch of the most recent analysis, and its quality gate result.
+			latestIndex := -1
+			var latestTime time.Time
+			for i, branch := range structured.Branches {
+				analysedAt, err := time.Parse(timeParseFormat, branch.AnalysisDate)
+				if err != nil { // never analysed (empty date) or unparsable
+					continue
+				}
+				if latestIndex == -1 || analysedAt.After(latestTime) {
+					latestIndex, latestTime = i, analysedAt
+				}
+			}
+			if latestIndex >= 0 {
+				projectList[index].LastAnalysisBranch = structured.Branches[latestIndex].Name
+				projectList[index].QualityGateStatus = gateResult(structured.Branches[latestIndex].Status.QualityGateStatus)
+			}
 		}
 		loadingCh <- true
 		displayJob("obtain branch data", "end")
@@ -560,4 +573,16 @@ func ratingLetter(value string) string {
 		return value
 	}
 	return string(rune('A' + int(f) - 1))
+}
+
+// gateResult turns SonarQube's quality gate status (OK / ERROR / WARN) into PASSED / FAILED.
+func gateResult(value string) string {
+	switch value {
+	case "OK":
+		return "PASSED"
+	case "ERROR":
+		return "FAILED"
+	default:
+		return value
+	}
 }

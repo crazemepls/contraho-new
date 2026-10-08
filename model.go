@@ -41,15 +41,16 @@ type ComponentSearch struct {
 }
 
 type ProjectSearchList struct {
-	Key    string
-	Name   string
-	Branch string
-	Loc    string
-	Owner  string
-	Email  string
-	// LastAnalysisBranch string
-	LastAnalysisDate string
+	Key                string
+	Name               string
+	Branch             string
+	Loc                string
+	Owner              string
+	Email              string
+	LastAnalysisBranch string
+	LastAnalysisDate   string
 	// QualityGateId      string
+	QualityGateStatus     string
 	QualityGateName       string
 	Language              string
 	Bugs                  string
