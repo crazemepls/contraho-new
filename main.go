@@ -61,6 +61,18 @@ func projectSearch() {
 		// printStructAsTable(projectList, []string{"Key", "Name", "Branch", "Loc", "Owner"})
 	}
 
+	if mailCfg, ok := otherOptions["mail"].(mailConfig); ok && mailCfg.enabled() {
+		body := fmt.Sprintf("SonarQube project report\n\nProjects in the attached CSV: %d\nServer: %s\n", len(projectList), *host)
+		if bureau != "" {
+			body += fmt.Sprintf("Key prefix filter (--bureau): %s\n", bureau)
+		}
+		body += fmt.Sprintf("Generated: %s\n", time.Now().Format("2006-01-02 15:04 MST"))
+		if err := sendMail(mailCfg, *fileOutput, body); err != nil {
+			fmt.Printf("Error sending email: %v\nThe CSV file was kept at %s\n", err, *fileOutput)
+			os.Exit(1)
+		}
+		fmt.Println("Report emailed to", mailCfg.To)
+	}
 }
 
 func project(host string, credential string, authMode int, lengthProjectPage int, filterMode int, appName string, bureau string) []ProjectSearchList {

@@ -34,6 +34,12 @@ func arguments(subcommand int) (host *string,
 		listedApp := flagSet.Bool("listed-on-app", false, "List only listed projects on any application")
 		app := flagSet.String("app", "", "List only listed on the specified application")
 		bureau := flagSet.String("bureau", "", `List only projects whose key starts with this prefix, e.g. --bureau="tsc:" (comma-separate for several)`)
+		mailTo := flagSet.String("mail-to", "", "Email the CSV to these recipients (comma-separated). Needs --filename, --mail-from and --smtp-host")
+		mailFrom := flagSet.String("mail-from", "", "Sender address used by --mail-to")
+		smtpHost := flagSet.String("smtp-host", "", "SMTP server as host:port, e.g. smtp.example.com:587")
+		smtpUser := flagSet.String("smtp-user", "", "SMTP username (the password is read from $SMTP_PASSWORD)")
+		smtpTLS := flagSet.String("smtp-tls", "auto", "SMTP encryption: auto, none, starttls or tls")
+		mailSubject := flagSet.String("mail-subject", "", "Email subject (default: SonarQube project report <date>)")
 		flagSet.Parse(os.Args[2:])
 
 		if *fileOutput != "" && *pagingOutput {
@@ -48,6 +54,13 @@ func arguments(subcommand int) (host *string,
 		}
 		credential, authMode = resolveConnection(host, *username, *password, *token)
 		// fmt.Println(*username, *password, credential, authMode)
+
+		// Check the mail settings now, before the long run, so a typo fails fast.
+		mailCfg := mailConfig{To: *mailTo, From: *mailFrom, Host: *smtpHost, User: *smtpUser,
+			Password: os.Getenv("SMTP_PASSWORD"), TLSMode: *smtpTLS, Subject: *mailSubject}
+		if err := mailCfg.validate(*fileOutput); err != nil {
+			exitWithErrorMessage("Error: "+err.Error(), 1)
+		}
 
 		raw := navigationGlobalApi(*host, credential, authMode)
 		// raw := []byte(`{"canAdmin":true,"globalPages":[],"settings":{"sonar.lf.enableGravatar":"false","sonar.developerAggregatedInfo.disabled":"false","sonar.lf.gravatarServerUrl":"https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s\u003d{SIZE}\u0026d\u003didenticon","sonar.technicalDebt.ratingGrid":"0.05,0.1,0.2,0.5","sonar.updatecenter.activate":"false"},"qualifiers":["TRK"],"version":"9.5 (build 56709)","productionDatabase":true,"branchesEnabled":false,"instanceUsesDefaultAdminCredentials":false,"multipleAlmEnabled":false,"projectImportFeatureEnabled":false,"regulatoryReportFeatureEnabled":false,"edition":"community","needIssueSync":false,"standalone":true}`)
@@ -89,6 +102,7 @@ func arguments(subcommand int) (host *string,
 		additionalOptions["listedApp"] = *listedApp
 		additionalOptions["app"] = *app
 		additionalOptions["bureau"] = *bureau
+		additionalOptions["mail"] = mailCfg
 		// fmt.Println(*unlistedApp)
 	case 1:
 		flagSet.Parse(os.Args[2:])

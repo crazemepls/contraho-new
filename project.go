@@ -386,6 +386,9 @@ func listProjectofApplication(host string, projectListed []string, applicationKe
 }
 
 func projectFiltering(projectList []ProjectSearchList, host string, credential string, option int, authMode int, appName string) []ProjectSearchList {
+	if option != 0 && option != 1 {
+		return projectList // no filter flag: skip listing every application
+	}
 	displayJob("project filtering", "start")
 	go displayLoading(loadingCh)
 	const (
