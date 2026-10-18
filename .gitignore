@@ -3,3 +3,6 @@
 *.conf
 *.sh
 !contraho-report.sh
+/contraho
+/contraho.exe
+/reports/

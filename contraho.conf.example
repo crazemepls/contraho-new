@@ -1,0 +1,27 @@
+# Copy to contraho.conf (same folder as contraho-report.sh) and run:
+#   chmod 600 contraho.conf
+# This file is read by bash: wrap values containing $ & spaces or quotes in single quotes.
+# Do NOT commit contraho.conf to git (it contains secrets).
+
+SONAR_HOST=http://x.x.x.x:9000
+SONAR_TOKEN='paste-token-here'
+
+# Only projects whose key starts with this (leave empty for all projects)
+BUREAU=tsc:
+
+# Defaults for the email; override per run with --mail-to / --mail-subject
+MAIL_TO=alice@example.com,bob@example.com
+MAIL_FROM=reports@example.com
+#MAIL_SUBJECT=Weekly SonarQube report
+
+SMTP_HOST=smtp.example.com:587
+# Leave SMTP_USER and SMTP_PASSWORD empty if the relay needs no login
+SMTP_USER=reports@example.com
+SMTP_PASSWORD='paste-smtp-password-here'
+# auto | none | starttls | tls
+SMTP_TLS=auto
+
+# Optional
+#KEEP_DAYS=30                  # delete reports older than this; 0 = keep everything
+#OUT_DIR=/path/to/reports      # default: reports/ next to the script
+#BIN=/path/to/contraho         # default: contraho next to the script
