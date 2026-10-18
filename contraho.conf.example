@@ -1,10 +1,11 @@
 # Copy to contraho.conf (same folder as contraho-report.sh) and run:
 #   chmod 600 contraho.conf
-# This file is read by bash: wrap values containing $ & spaces or quotes in single quotes.
+# Write NAME=value, one per line. No quotes needed, even for spaces or $ & characters.
+# Comments go on their own line (starting with #), not after a value.
 # Do NOT commit contraho.conf to git (it contains secrets).
 
 SONAR_HOST=http://x.x.x.x:9000
-SONAR_TOKEN='paste-token-here'
+SONAR_TOKEN=paste-token-here
 
 # Only projects whose key starts with this (leave empty for all projects)
 BUREAU=tsc:
@@ -17,11 +18,12 @@ MAIL_FROM=reports@example.com
 SMTP_HOST=smtp.example.com:587
 # Leave SMTP_USER and SMTP_PASSWORD empty if the relay needs no login
 SMTP_USER=reports@example.com
-SMTP_PASSWORD='paste-smtp-password-here'
+SMTP_PASSWORD=paste-smtp-password-here
 # auto | none | starttls | tls
 SMTP_TLS=auto
 
 # Optional
-#KEEP_DAYS=30                  # delete reports older than this; 0 = keep everything
-#OUT_DIR=/path/to/reports      # default: reports/ next to the script
-#BIN=/path/to/contraho         # default: contraho next to the script
+# Where reports are saved (default: reports/ next to the script)
+#OUT_DIR=/path/to/reports
+# Path to the contraho binary (default: contraho next to the script)
+#BIN=/path/to/contraho

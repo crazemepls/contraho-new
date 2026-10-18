@@ -75,7 +75,7 @@ load_conf() {
       value="${BASH_REMATCH[1]}"                            # one pair of quotes is optional
     fi
     case "$key" in
-      SONAR_HOST|SONAR_TOKEN|BUREAU|MAIL_TO|MAIL_FROM|MAIL_SUBJECT|SMTP_HOST|SMTP_USER|SMTP_PASSWORD|SMTP_TLS|KEEP_DAYS|OUT_DIR|BIN)
+      SONAR_HOST|SONAR_TOKEN|BUREAU|MAIL_TO|MAIL_FROM|MAIL_SUBJECT|SMTP_HOST|SMTP_USER|SMTP_PASSWORD|SMTP_TLS|OUT_DIR|BIN)
         export "$key=$value" ;;
       *) echo "$CONF line $n: unknown setting $key (typo?)" >&2; exit 2 ;;
     esac
@@ -96,7 +96,6 @@ if [ "$BUREAU_SET" = 1 ];       then BUREAU="$BUREAU_ARG"; fi
 
 BIN="${BIN:-$SCRIPT_DIR/contraho}"
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/reports}"
-KEEP_DAYS="${KEEP_DAYS:-30}"      # 0 = never delete old reports
 SMTP_TLS="${SMTP_TLS:-auto}"
 
 mkdir -p "$OUT_DIR"
@@ -112,8 +111,3 @@ if [ -n "${MAIL_SUBJECT:-}" ]; then args+=(--mail-subject="$MAIL_SUBJECT"); fi
 echo "Sending to: $MAIL_TO${BUREAU:+  (projects starting with \"$BUREAU\")}"
 "$BIN" "${args[@]}"      # a failure stops the script with contraho's exit code
 echo "Saved: $CSV"
-
-# Remove old reports (only report-*.csv files in OUT_DIR).
-if [ "$KEEP_DAYS" -gt 0 ]; then
-  find "$OUT_DIR" -maxdepth 1 -name 'report-*.csv' -mtime +"$KEEP_DAYS" -delete
-fi
