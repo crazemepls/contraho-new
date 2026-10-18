@@ -1,3 +1,3 @@
-module github.com/jessie-txt/sq-project-data-gatherer
+module github.com/crazemepls/contraho-new
 
 go 1.19

@@ -2,3 +2,4 @@
 *.pdf
 *.conf
 *.sh
+!contraho-report.sh
